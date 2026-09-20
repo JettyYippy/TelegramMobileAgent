@@ -90,18 +90,72 @@ class TestApprovalAndRisk(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result)
 
     def test_model_alias_resolution(self):
+        # Google
         self.assertEqual(resolve_model_alias("flash"), "gemini-2.5-flash")
         self.assertEqual(resolve_model_alias("2.5"), "gemini-2.5-flash")
         self.assertEqual(resolve_model_alias("pro"), "gemini-2.5-pro")
         self.assertEqual(resolve_model_alias("3.7"), "gemini-3.7-flash")
-        self.assertEqual(resolve_model_alias("gemini-1.5-flash"), "gemini-1.5-flash")
+        
+        # OpenAI
+        self.assertEqual(resolve_model_alias("4o"), "gpt-4o")
+        self.assertEqual(resolve_model_alias("gpt-4o"), "gpt-4o")
+        self.assertEqual(resolve_model_alias("mini"), "gpt-4o-mini")
+        self.assertEqual(resolve_model_alias("o3"), "o3-mini")
+        self.assertEqual(resolve_model_alias("o1"), "o1")
+
+        # Anthropic
+        self.assertEqual(resolve_model_alias("claude-3.7"), "claude-3-7-sonnet")
+        self.assertEqual(resolve_model_alias("sonnet"), "claude-3-5-sonnet")
+        self.assertEqual(resolve_model_alias("haiku"), "claude-3-5-haiku")
+
+        # DeepSeek & xAI
+        self.assertEqual(resolve_model_alias("deepseek"), "deepseek-chat")
+        self.assertEqual(resolve_model_alias("r1"), "deepseek-reasoner")
+        self.assertEqual(resolve_model_alias("grok"), "grok-2-latest")
+        
         self.assertIsNone(resolve_model_alias("nonexistent-model"))
 
     def test_models_list_formatting(self):
         msg = format_models_list("gemini-2.5-flash")
         self.assertIn("gemini-2.5-flash", msg)
         self.assertIn("ACTIVE", msg)
-        self.assertIn("15 RPM", msg)
+        self.assertIn("Google Gemini", msg)
+        self.assertIn("OpenAI", msg)
+        self.assertIn("Anthropic Claude", msg)
+        self.assertIn("DeepSeek", msg)
+
+    async def test_workspace_boundary_protection(self):
+        from multi_provider_runner import WorkspaceToolExecutor
+        import tempfile
+        import shutil
+
+        temp_dir = Path(tempfile.mkdtemp())
+        try:
+            manager = ApprovalManager()
+            executor = WorkspaceToolExecutor(
+                workspace_dir=temp_dir,
+                review_mode="high_risk_only",
+                approval_manager=manager
+            )
+
+            # Test safe file write inside workspace
+            write_res = await executor.execute_tool("write_to_file", {"path": "sub/hello.txt", "content": "hello world"})
+            self.assertIn("Success", write_res)
+            self.assertTrue((temp_dir / "sub" / "hello.txt").exists())
+
+            # Test safe file read inside workspace
+            read_res = await executor.execute_tool("read_file", {"path": "sub/hello.txt"})
+            self.assertEqual(read_res, "hello world")
+
+            # Test path traversal outside workspace (MUST be denied)
+            illegal_write = await executor.execute_tool("write_to_file", {"path": "../escaped.txt", "content": "bad"})
+            self.assertIn("Access Denied", illegal_write)
+
+            illegal_read = await executor.execute_tool("read_file", {"path": "../../windows/system32/cmd.exe"})
+            self.assertIn("Access Denied", illegal_read)
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
 
 if __name__ == "__main__":
     unittest.main()
+

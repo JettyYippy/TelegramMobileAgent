@@ -146,18 +146,23 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
         return await unauthorized_warning(update)
 
-    status_str = "🟢 Idle" if not agent_service.is_running else "🟡 Working on a task..."
+    status_str = "🟡 Busy (Executing Prompt)" if agent_service.is_running else "🟢 Idle / Ready"
     pending_count = len(approval_manager.pending_requests)
+    model_info = AVAILABLE_MODELS.get(agent_service.model_name, {})
+    provider_name = model_info.get("provider", "google").capitalize()
+    configured_list = ", ".join(config.get_configured_providers()) or "None"
 
     msg = (
         f"📊 **Agent Status**\n\n"
         f"• **State:** {status_str}\n"
-        f"• **Active Model:** `{agent_service.model_name}`\n"
+        f"• **Active Model:** `{agent_service.model_name}` ({provider_name})\n"
+        f"• **Configured Providers:** {configured_list}\n"
         f"• **Workspace:** `{agent_service.workspace_dir}`\n"
         f"• **Review Mode:** `{agent_service.review_mode}`\n"
         f"• **Pending Approvals:** {pending_count}\n"
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+
 
 async def cmd_model(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
@@ -180,14 +185,24 @@ async def cmd_model(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     info = AVAILABLE_MODELS[resolved_id]
     agent_service.set_model(resolved_id)
+    
+    # Check if key is configured
+    provider_key = config.get_api_key_for_provider(info.get("provider", ""))
+    key_warning = ""
+    if not provider_key:
+        key_warning = f"\n\n⚠️ **Note**: `{info['env_key']}` is not set in `.env` yet. Please add it to your desktop `.env` file before prompting."
+
     await update.message.reply_text(
         f"✅ **Active Model Switched!**\n\n"
         f"🤖 **Model:** `{info['title']}` (`{resolved_id}`)\n"
+        f"• **Provider:** {info.get('provider', '').capitalize()}\n"
         f"• {info['description']}\n"
-        f"• **Free Tier Quota:** `{info['free_rpm']} RPM`\n"
-        f"• **Paid Tier Quota:** `{info['paid_rpm']} RPM`",
+        f"• **Free Tier Quota:** `{info['free_rpm']}`\n"
+        f"• **Paid Tier Quota:** `{info['paid_rpm']}`"
+        f"{key_warning}",
         parse_mode=ParseMode.MARKDOWN
     )
+
 
 async def cmd_workspace(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
@@ -419,7 +434,14 @@ def main():
     print(f"Default Workspace: {agent_service.workspace_dir}")
 
     global bot_app
-    bot_app = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).build()
+    from telegram.request import HTTPXRequest
+    t_request = HTTPXRequest(
+        connect_timeout=25.0,
+        read_timeout=30.0,
+        write_timeout=30.0,
+        pool_timeout=15.0
+    )
+    bot_app = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).request(t_request).build()
 
     # Register handlers
     bot_app.add_handler(CommandHandler("start", cmd_start))
@@ -436,7 +458,8 @@ def main():
     bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     print("Bot is polling for messages. Press Ctrl+C to stop.")
-    bot_app.run_polling()
+    bot_app.run_polling(bootstrap_retries=-1)
+
 
 if __name__ == "__main__":
     main()
