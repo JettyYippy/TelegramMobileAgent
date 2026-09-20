@@ -1,0 +1,24 @@
+# Environment & Secrets
+.env
+*.env
+*.key
+*.pem
+
+# Python & Virtual Environment
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Editor & OS Metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Runtime outputs & Logs
+workspace/
+*.log
