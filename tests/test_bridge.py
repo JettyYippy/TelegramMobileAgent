@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from approval_manager import ApprovalManager
 from risk_analyzer import is_high_risk
 from agent_service import AgentService
+from models_catalog import AVAILABLE_MODELS, resolve_model_alias, format_models_list
 
 class TestApprovalAndRisk(unittest.IsolatedAsyncioTestCase):
 
@@ -87,6 +88,20 @@ class TestApprovalAndRisk(unittest.IsolatedAsyncioTestCase):
             risk_reason="Destructive rmdir /s"
         )
         self.assertFalse(result)
+
+    def test_model_alias_resolution(self):
+        self.assertEqual(resolve_model_alias("flash"), "gemini-2.5-flash")
+        self.assertEqual(resolve_model_alias("2.5"), "gemini-2.5-flash")
+        self.assertEqual(resolve_model_alias("pro"), "gemini-2.5-pro")
+        self.assertEqual(resolve_model_alias("3.7"), "gemini-3.7-flash")
+        self.assertEqual(resolve_model_alias("gemini-1.5-flash"), "gemini-1.5-flash")
+        self.assertIsNone(resolve_model_alias("nonexistent-model"))
+
+    def test_models_list_formatting(self):
+        msg = format_models_list("gemini-2.5-flash")
+        self.assertIn("gemini-2.5-flash", msg)
+        self.assertIn("ACTIVE", msg)
+        self.assertIn("15 RPM", msg)
 
 if __name__ == "__main__":
     unittest.main()

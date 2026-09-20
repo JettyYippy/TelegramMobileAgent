@@ -27,6 +27,7 @@ class AgentService:
         self.workspace_dir.mkdir(parents=True, exist_ok=True)
         # Modes: "high_risk_only" (default), "safe" (all modifying), "strict" (all tools)
         self.review_mode = "high_risk_only"
+        self.model_name = config.DEFAULT_MODEL
         self.is_running = False
         self._send_telegram_fn: Optional[Callable[[str, str, str], Awaitable[None]]] = None
 
@@ -42,6 +43,10 @@ class AgentService:
     def set_review_mode(self, mode: str):
         if mode in ("high_risk_only", "safe", "strict"):
             self.review_mode = mode
+
+    def set_model(self, model_id: str) -> str:
+        self.model_name = model_id
+        return self.model_name
 
     async def execute_prompt(
         self,
@@ -116,6 +121,7 @@ class AgentService:
         agent_kwargs = {
             "workspaces": [str(self.workspace_dir)],
             "api_key": api_key,
+            "model": self.model_name,
             "retry_config": types.RetryConfig(
                 api_retry=types.ModelAPIRetryConfig(
                     max_retries=5,

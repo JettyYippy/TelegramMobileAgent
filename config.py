@@ -19,6 +19,7 @@ except ValueError:
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 DEFAULT_WORKSPACE = os.getenv("DEFAULT_WORKSPACE", str(BASE_DIR / "workspace"))
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gemini-2.5-flash").strip()
 
 def validate_config():
     """Validates necessary credentials and returns actionable error messages."""

@@ -119,12 +119,33 @@ All administrative commands run locally on your machine and consume **0 Gemini A
 | Command | Description | Token Cost |
 | :--- | :--- | :--- |
 | `/start` | Connect and verify bot status | Free (0 tokens) |
-| `/status` | View agent state (`Idle`/`Working`), active workspace, and mode | Free (0 tokens) |
+| `/model` or `/models` | View available models, descriptions, and RPM limits | Free (0 tokens) |
+| `/model <id>` | Switch active model on the fly (e.g. `/model 2.5-flash`) | Free (0 tokens) |
+| `/status` | View agent state (`Idle`/`Working`), active model, and workspace | Free (0 tokens) |
 | `/retry` | Re-executes your previous prompt | Only execution turn |
 | `/reset` | Resets agent state if stuck and clears pending approvals | Free (0 tokens) |
 | `/workspace <path>` | Views or switches the active project directory | Free (0 tokens) |
 | `/mode [high_risk\|safe\|strict]` | Adjusts permission sensitivity | Free (0 tokens) |
 | `/help` | Displays command reference guide | Free (0 tokens) |
+
+---
+
+## ⚡ Supported Models & Rate Limits (RPM)
+
+Because autonomous coding agents make multiple tool calls in quick succession (each tool call is 1 request), choosing the right model for your workload is essential:
+
+| Model ID | Short Alias | Free Tier RPM | Paid Tier RPM | Best For |
+| :--- | :--- | :--- | :--- | :--- |
+| **`gemini-2.5-flash`** ⭐ | `flash`, `2.5` | **15 RPM** | **1,000+ RPM** | **Default Daily Driver** — Fast, high capacity, rare rate limits. |
+| **`gemini-1.5-flash`** | `1.5`, `1.5-flash` | **15 RPM** | **1,000+ RPM** | Lightweight, rock-solid stable tasks. |
+| **`gemini-2.5-pro`** | `pro`, `2.5-pro` | **2 RPM** | **360+ RPM** | Deep reasoning & multi-file architectural planning. |
+| **`gemini-3.7-flash`** | `3.7`, `3.7-flash` | **5 RPM** | **1,000+ RPM** | Hybrid reasoning agent workloads. |
+| **`gemini-3.8-flash`** | `3.8`, `3.8-flash` | **5 RPM** | **1,000+ RPM** | Latest experimental features and previews. |
+
+> [!TIP]
+> **Free Tier Tip**: By default, **`gemini-2.5-flash`** is configured because it provides **15 Requests/Min** on the Free Tier (3x more than preview models).
+> If you hit a rate limit (HTTP 429), the bot's built-in `retry_config` will automatically back off and retry, or you can simply send `/retry` after ~45 seconds!
+> To unlock **1,000+ RPM** and eliminate waiting entirely, enable Pay-As-You-Go in [Google AI Studio](https://aistudio.google.com/) (Flash models typically cost <$0.05 for a whole day of coding).
 
 ---
 

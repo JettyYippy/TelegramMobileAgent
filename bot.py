@@ -23,6 +23,7 @@ from telegram.ext import (
 import config
 from approval_manager import ApprovalManager
 from agent_service import AgentService
+from models_catalog import AVAILABLE_MODELS, format_models_list, resolve_model_alias
 
 # Logging configuration
 logging.basicConfig(
@@ -107,12 +108,14 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_msg = (
         f"👋 **Welcome to TelegramMobileAgent!**\n\n"
         f"Connected to your computer as `{user_first_name}`.\n\n"
+        f"🤖 **Model:** `{agent_service.model_name}`\n"
         f"📂 **Active Workspace:** `{agent_service.workspace_dir}`\n"
         f"⚡ **Review Mode:** `{agent_service.review_mode}` (Only destructive operations like `rm -rf` require your tap)\n\n"
         f"**Commands:**\n"
         f"• Send any natural prompt to start building or coding\n"
+        f"• `/model` (or `/models`) - View models & switch (e.g. `/model 2.5-flash`)\n"
         f"• `/retry` - Re-runs your previous prompt\n"
-        f"• `/status` - Check current agent activity and workspace\n"
+        f"• `/status` - Check current agent activity, workspace, and model\n"
         f"• `/workspace <path>` - View or switch workspace directory\n"
         f"• `/mode` - Switch between `high_risk`, `safe`, and `strict`\n"
         f"• `/reset` (or `/cancel`) - Reset agent state if stuck\n"
@@ -128,8 +131,10 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🤖 **TelegramMobileAgent Guide**\n\n"
         "1. **Prompting**: Send any prompt to code, build, or manage tasks.\n"
         "2. **Commands (100% FREE - 0 Tokens Consumed)**:\n"
+        "   • `/model` or `/models` - List Gemini models & RPM limits\n"
+        "   • `/model <id>` - Switch active model (e.g. `/model 2.5-flash`)\n"
         "   • `/retry` - Re-runs your last prompt\n"
-        "   • `/status` - Check agent state, active workspace, and review mode\n"
+        "   • `/status` - Check agent state, active workspace, and model\n"
         "   • `/reset` (or `/cancel`) - Reset agent state if stuck\n"
         "   • `/workspace <path>` - View or switch active desktop folder\n"
         "   • `/mode [high_risk|safe|strict]` - Adjust approval sensitivity\n\n"
@@ -147,11 +152,42 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         f"📊 **Agent Status**\n\n"
         f"• **State:** {status_str}\n"
+        f"• **Active Model:** `{agent_service.model_name}`\n"
         f"• **Workspace:** `{agent_service.workspace_dir}`\n"
         f"• **Review Mode:** `{agent_service.review_mode}`\n"
         f"• **Pending Approvals:** {pending_count}\n"
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+
+async def cmd_model(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+
+    if not context.args:
+        list_msg = format_models_list(agent_service.model_name)
+        await update.message.reply_text(list_msg, parse_mode=ParseMode.MARKDOWN)
+        return
+
+    requested = " ".join(context.args).strip()
+    resolved_id = resolve_model_alias(requested)
+    if not resolved_id:
+        valid_options = ", ".join(f"`{k}`" for k in AVAILABLE_MODELS.keys())
+        await update.message.reply_text(
+            f"❌ Unknown model: `{requested}`\n\nValid options:\n{valid_options}\n\nSend `/models` to view full specs & RPMs.",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+
+    info = AVAILABLE_MODELS[resolved_id]
+    agent_service.set_model(resolved_id)
+    await update.message.reply_text(
+        f"✅ **Active Model Switched!**\n\n"
+        f"🤖 **Model:** `{info['title']}` (`{resolved_id}`)\n"
+        f"• {info['description']}\n"
+        f"• **Free Tier Quota:** `{info['free_rpm']} RPM`\n"
+        f"• **Paid Tier Quota:** `{info['paid_rpm']} RPM`",
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 async def cmd_workspace(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
@@ -391,6 +427,8 @@ def main():
     bot_app.add_handler(CommandHandler("status", cmd_status))
     bot_app.add_handler(CommandHandler("workspace", cmd_workspace))
     bot_app.add_handler(CommandHandler("mode", cmd_mode))
+    bot_app.add_handler(CommandHandler("model", cmd_model))
+    bot_app.add_handler(CommandHandler("models", cmd_model))
     bot_app.add_handler(CommandHandler("reset", cmd_reset))
     bot_app.add_handler(CommandHandler("cancel", cmd_reset))
     bot_app.add_handler(CommandHandler("retry", cmd_retry))
