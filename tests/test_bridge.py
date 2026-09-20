@@ -91,8 +91,8 @@ class TestApprovalAndRisk(unittest.IsolatedAsyncioTestCase):
 
     def test_model_alias_resolution(self):
         # Google
-        self.assertEqual(resolve_model_alias("flash"), "gemini-2.5-flash")
-        self.assertEqual(resolve_model_alias("2.5"), "gemini-2.5-flash")
+        self.assertEqual(resolve_model_alias("flash"), "gemini-3.6-flash")
+        self.assertEqual(resolve_model_alias("3.6"), "gemini-3.6-flash")
         self.assertEqual(resolve_model_alias("pro"), "gemini-2.5-pro")
         self.assertEqual(resolve_model_alias("3.7"), "gemini-3.7-flash")
         
@@ -116,13 +116,14 @@ class TestApprovalAndRisk(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(resolve_model_alias("nonexistent-model"))
 
     def test_models_list_formatting(self):
-        msg = format_models_list("gemini-2.5-flash")
-        self.assertIn("gemini-2.5-flash", msg)
+        msg = format_models_list("gemini-3.6-flash")
+        self.assertIn("gemini-3.6-flash", msg)
         self.assertIn("ACTIVE", msg)
         self.assertIn("Google Gemini", msg)
         self.assertIn("OpenAI", msg)
         self.assertIn("Anthropic Claude", msg)
         self.assertIn("DeepSeek", msg)
+
 
     async def test_workspace_boundary_protection(self):
         from multi_provider_runner import WorkspaceToolExecutor

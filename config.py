@@ -25,7 +25,7 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "").strip()
 XAI_API_KEY = os.getenv("XAI_API_KEY", "").strip()
 
 DEFAULT_WORKSPACE = os.getenv("DEFAULT_WORKSPACE", str(BASE_DIR / "workspace"))
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gemini-2.5-flash").strip()
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gemini-3.6-flash").strip()
 
 def get_api_key_for_provider(provider: str) -> str:
     """Returns the API key configured for a given provider."""

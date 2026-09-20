@@ -9,9 +9,12 @@ from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    BotCommand,
+    BotCommandScopeDefault,
 )
 from telegram.constants import ParseMode
 from telegram.ext import (
+    Application,
     ApplicationBuilder,
     CommandHandler,
     CallbackQueryHandler,
@@ -359,12 +362,27 @@ async def run_prompt_workflow(prompt: str, update: Update, context: ContextTypes
     except Exception as e:
         err_str = str(e)
         logger.exception("Error during prompt execution: %s", e)
-        if "429" in err_str or "quota" in err_str.lower() or "resource_exhausted" in err_str.lower():
+        if "404" in err_str and ("no longer available" in err_str or "not_found" in err_str.lower()):
+            error_msg = (
+                "⚠️ **Model Unavailable or Deprecated (404)**\n\n"
+                f"The model `{agent_service.model_name}` is not available or has been deprecated on your account.\n\n"
+                "👉 **Recommended Fix:** Switch to the latest verified model by sending:\n"
+                "`/model 3.6-flash`\n\n"
+                "Or send `/models` to choose another model."
+            )
+        elif "503" in err_str or "high demand" in err_str.lower():
+            error_msg = (
+                "⏳ **Model Provider Temporarily Overloaded (503)**\n\n"
+                "The AI model provider is currently experiencing temporary high demand.\n\n"
+                "👉 **Next Step:** Wait ~30-45 seconds, then send `/retry` to re-run your prompt."
+            )
+        elif "429" in err_str or "quota" in err_str.lower() or "resource_exhausted" in err_str.lower():
             error_msg = (
                 "⏳ **API Rate Limit Exceeded (Free Tier)**\n\n"
-                "Your Gemini Free Tier limit was reached (typically 5-15 requests/minute). "
+                "Your model quota limit was reached. "
                 "Because autonomous agents execute multiple tool calls in quick succession, you briefly hit this limit.\n\n"
-                "👉 **Next Step:** Wait ~45 seconds for your quota window to reset, then simply send `/retry` to resume!"
+                "👉 **Next Step:** Wait ~45 seconds for your quota window to reset, then simply send `/retry` to resume!\n"
+                "💡 _Tip: You can also switch models anytime via `/model` (e.g. `/model 3.6-flash`)._"
             )
         elif "outside the allowed workspace" in err_str:
             error_msg = (
@@ -376,6 +394,7 @@ async def run_prompt_workflow(prompt: str, update: Update, context: ContextTypes
         else:
             error_msg = f"❌ **Error executing task:**\n`{err_str}`\n\n💡 _Tip: You can send `/retry` to re-run this prompt._"
         await update.message.reply_text(error_msg, parse_mode=ParseMode.MARKDOWN)
+
 
 async def cmd_retry(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
@@ -420,6 +439,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await run_prompt_workflow(prompt, update, context)
 
+BOT_COMMANDS = [
+    BotCommand("models", "Browse all models & RPM limits"),
+    BotCommand("model", "Switch active AI model (e.g. /model 3.6-flash)"),
+    BotCommand("status", "Check workspace, active model & state"),
+    BotCommand("retry", "Re-run your previous prompt"),
+    BotCommand("workspace", "View or switch project directory"),
+    BotCommand("mode", "Change approval sensitivity"),
+    BotCommand("reset", "Cancel task & clear pending approvals"),
+    BotCommand("help", "View full command guide"),
+]
+
+async def register_bot_commands(application: Application):
+    """Registers command dropdown menu with Telegram server so users see suggestions when typing /."""
+    try:
+        await application.bot.set_my_commands(BOT_COMMANDS, scope=BotCommandScopeDefault())
+        logger.info("Successfully registered Telegram command dropdown list.")
+    except Exception as e:
+        logger.warning("Could not register bot commands with Telegram: %s", e)
+
 def main():
     errors = config.validate_config()
     if errors:
@@ -441,7 +479,14 @@ def main():
         write_timeout=30.0,
         pool_timeout=15.0
     )
-    bot_app = ApplicationBuilder().token(config.TELEGRAM_BOT_TOKEN).request(t_request).build()
+    bot_app = (
+        ApplicationBuilder()
+        .token(config.TELEGRAM_BOT_TOKEN)
+        .request(t_request)
+        .post_init(register_bot_commands)
+        .build()
+    )
+
 
     # Register handlers
     bot_app.add_handler(CommandHandler("start", cmd_start))

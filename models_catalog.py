@@ -4,28 +4,40 @@ AVAILABLE_MODELS: Dict[str, Dict[str, Any]] = {
     # -------------------------------------------------------------
     # 🌐 GOOGLE GEMINI
     # -------------------------------------------------------------
-    "gemini-2.5-flash": {
-        "title": "Gemini 2.5 Flash",
+    "gemini-3.6-flash": {
+        "title": "Gemini 3.6 Flash",
         "provider": "google",
         "env_key": "GEMINI_API_KEY",
-        "api_model": "gemini-2.5-flash",
-        "description": "⚡ High capability & fast agent execution (Best Default)",
+        "api_model": "gemini-3.6-flash",
+        "description": "⚡ SOTA high capability & fast agent execution (Best Default)",
         "free_rpm": "15 RPM",
         "paid_rpm": "1,000+ RPM",
         "recommended": True,
-        "aliases": ["2.5", "flash", "2.5-flash", "gemini"]
+        "aliases": ["3.6", "flash", "3.6-flash", "gemini-flash", "gemini", "2.5"]
     },
-    "gemini-1.5-flash": {
-        "title": "Gemini 1.5 Flash",
+    "gemini-3.5-flash": {
+        "title": "Gemini 3.5 Flash",
         "provider": "google",
         "env_key": "GEMINI_API_KEY",
-        "api_model": "gemini-1.5-flash",
-        "description": "🚀 Fast, rock-solid stability & lightweight tasks",
+        "api_model": "gemini-3.5-flash",
+        "description": "🚀 Fast, rock-solid stability & high speed",
         "free_rpm": "15 RPM",
         "paid_rpm": "1,000+ RPM",
         "recommended": False,
-        "aliases": ["1.5", "1.5-flash"]
+        "aliases": ["3.5", "3.5-flash"]
     },
+    "gemini-flash-latest": {
+        "title": "Gemini Flash (Latest)",
+        "provider": "google",
+        "env_key": "GEMINI_API_KEY",
+        "api_model": "gemini-flash-latest",
+        "description": "🔄 Points dynamically to latest stable Flash release",
+        "free_rpm": "15 RPM",
+        "paid_rpm": "1,000+ RPM",
+        "recommended": False,
+        "aliases": ["latest", "flash-latest"]
+    },
+
     "gemini-2.5-pro": {
         "title": "Gemini 2.5 Pro",
         "provider": "google",

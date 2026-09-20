@@ -30,8 +30,9 @@ flowchart LR
 ## ✨ Key Features
 
 - 📱 **Mobile-First Remote Coding**: Prompt your computer from your phone to write code, install libraries, debug errors, and run tests.
+- ⌨️ **Instant Command Dropdown Menu**: Typing `/` or tapping the Telegram `[/]` menu button opens an auto-complete dropdown drawer showing all commands and descriptions.
 - 🌐 **Multi-Provider AI Freedom**: Switch effortlessly between the world's best models on the fly:
-  - **Google Gemini** (`gemini-2.5-flash`, `gemini-2.5-pro`, `gemini-3.7-flash`)
+  - **Google Gemini** (`gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-2.5-pro`, `gemini-3.7-flash`)
   - **OpenAI** (`gpt-4o`, `gpt-4o-mini`, `o3-mini`, `o1`)
   - **Anthropic Claude** (`claude-3-7-sonnet`, `claude-3-5-sonnet`, `claude-3-5-haiku`)
   - **DeepSeek** (`deepseek-chat` / V3, `deepseek-reasoner` / R1)
@@ -53,8 +54,9 @@ Because autonomous coding agents make multiple tool calls in quick succession (e
 
 | Provider | Model ID | Short Alias | Free Tier RPM | Paid Tier RPM | Best For |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Google** | **`gemini-2.5-flash`** ⭐ | `flash`, `2.5` | **15 RPM** | **1,000+ RPM** | **Default Daily Driver** — Fast, smart, high capacity. |
-| **Google** | **`gemini-1.5-flash`** | `1.5`, `1.5-flash` | **15 RPM** | **1,000+ RPM** | Lightweight, rock-solid stable tasks. |
+| **Google** | **`gemini-3.6-flash`** ⭐ | `3.6`, `flash`, `3.6-flash` | **15 RPM** | **1,000+ RPM** | **Default Daily Driver** — Fast, smart, high capacity, fully verified. |
+| **Google** | **`gemini-3.5-flash`** | `3.5`, `3.5-flash` | **15 RPM** | **1,000+ RPM** | High-speed, rock-solid stable tasks. |
+| **Google** | **`gemini-flash-latest`** | `latest`, `flash-latest` | **15 RPM** | **1,000+ RPM** | Points dynamically to latest stable Flash release. |
 | **Google** | **`gemini-2.5-pro`** | `pro`, `2.5-pro` | **2 RPM** | **360+ RPM** | Deep reasoning & multi-file architectural planning. |
 | **Google** | **`gemini-3.7-flash`** | `3.7`, `3.7-flash` | **5 RPM** | **1,000+ RPM** | Hybrid reasoning agent workloads. |
 | **OpenAI** | **`gpt-4o`** | `4o`, `gpt4o` | *Paid Only* | **500 - 10,000 RPM** | Flagship multimodal intelligence & general coding. |
@@ -69,8 +71,9 @@ Because autonomous coding agents make multiple tool calls in quick succession (e
 | **xAI** | **`grok-2-latest`** | `grok`, `grok-2` | *Paid Only* | **600+ RPM** | Frontier LLM with real-time reasoning. |
 
 > [!TIP]
-> **Free Tier Tip**: By default, **`gemini-2.5-flash`** is configured because it provides **15 Requests/Min on Google's Free Tier** (no credit card required).
+> **Free Tier Tip**: By default, **`gemini-3.6-flash`** is configured because it provides **15 Requests/Min on Google's Free Tier** (no credit card required).
 > If you hit a rate limit (HTTP 429), the bot automatically performs exponential backoff retries, or you can send `/retry` after ~45 seconds.
+
 
 ---
 
@@ -114,8 +117,8 @@ XAI_API_KEY=xai-...your_xai_key              # https://console.x.ai/
 # 4. Target folder where the agent builds code (defaults to ./workspace)
 DEFAULT_WORKSPACE=./workspace
 
-# 5. Default Model (optional, defaults to gemini-2.5-flash)
-DEFAULT_MODEL=gemini-2.5-flash
+# 5. Default Model (optional, defaults to gemini-3.6-flash)
+DEFAULT_MODEL=gemini-3.6-flash
 ```
 
 #### How to get your credentials:
