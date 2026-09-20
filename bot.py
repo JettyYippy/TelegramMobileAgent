@@ -306,8 +306,24 @@ async def run_prompt_workflow(prompt: str, update: Update, context: ContextTypes
                     await update.message.reply_text(chunk)
 
     except Exception as e:
+        err_str = str(e)
         logger.exception("Error during prompt execution: %s", e)
-        error_msg = f"❌ **Error executing task:**\n`{str(e)}`\n\n💡 _Tip: You can send `/retry` to re-run this prompt._"
+        if "429" in err_str or "quota" in err_str.lower() or "resource_exhausted" in err_str.lower():
+            error_msg = (
+                "⏳ **API Rate Limit Exceeded (Free Tier)**\n\n"
+                "Your Gemini Free Tier limit was reached (typically 5-15 requests/minute). "
+                "Because autonomous agents execute multiple tool calls in quick succession, you briefly hit this limit.\n\n"
+                "👉 **Next Step:** Wait ~45 seconds for your quota window to reset, then simply send `/retry` to resume!"
+            )
+        elif "outside the allowed workspace" in err_str:
+            error_msg = (
+                f"🛡️ **Workspace Boundary Restriction**\n\n"
+                f"The agent attempted to access files outside its allowed workspace.\n\n"
+                f"📂 **Active Workspace:** `{agent_service.workspace_dir}`\n\n"
+                f"👉 **Tip:** Use `/workspace <path>` to point the agent directly to the folder you want it to work in."
+            )
+        else:
+            error_msg = f"❌ **Error executing task:**\n`{err_str}`\n\n💡 _Tip: You can send `/retry` to re-run this prompt._"
         await update.message.reply_text(error_msg, parse_mode=ParseMode.MARKDOWN)
 
 async def cmd_retry(update: Update, context: ContextTypes.DEFAULT_TYPE):

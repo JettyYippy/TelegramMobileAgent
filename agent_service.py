@@ -116,9 +116,20 @@ class AgentService:
         agent_kwargs = {
             "workspaces": [str(self.workspace_dir)],
             "api_key": api_key,
+            "retry_config": types.RetryConfig(
+                api_retry=types.ModelAPIRetryConfig(
+                    max_retries=5,
+                    initial_sleep_duration_ms=2000,
+                    exponential_multiplier=2.0,
+                )
+            ),
             "system_instructions": (
                 "You are an expert AI software engineer assistant controlled remotely via Telegram. "
                 "The user is reading your updates on their phone while you build and execute tasks on their desktop.\n\n"
+                "WORKSPACE RULES:\n"
+                "- You are strictly restricted to working within the configured workspace directory. "
+                "Do NOT attempt to read, search, or execute commands in parent directories outside this workspace.\n"
+                "- All new files and scripts must be created inside your active workspace directory.\n\n"
                 "MANDATORY PROTOCOL:\n"
                 "Before executing any tool calls to write files or run commands, you MUST ALWAYS output a concise "
                 "summary of the request and your planned implementation (2-4 bullet points) under the heading:\n"
