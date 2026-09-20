@@ -165,10 +165,36 @@ All administrative commands run locally on your machine and consume **0 API toke
 | `/model <name>` | Switch active model on the fly (e.g. `/model 4o`, `/model sonnet`, `/model deepseek`, `/model flash`) | Free (0 tokens) |
 | `/status` | View agent state (`Idle`/`Busy`), active model, and configured providers | Free (0 tokens) |
 | `/retry` | Re-executes your previous prompt | Only execution turn |
+| `/logs [keyword]` | View recent filtered diagnostic errors directly in chat | Free (0 tokens) |
 | `/reset` | Resets agent state if stuck and clears pending approvals | Free (0 tokens) |
 | `/workspace <path>` | Views or switches the active project directory | Free (0 tokens) |
 | `/mode [high_risk\|safe\|strict]` | Adjusts permission sensitivity | Free (0 tokens) |
 | `/help` | Displays command reference guide | Free (0 tokens) |
+
+---
+
+## 🔍 Diagnostics & Error Logs
+
+TelegramMobileAgent maintains clean, date-filtered diagnostic error logs so you can inspect what went wrong (e.g. rate limits, network timeouts, or model errors) and modify configurations accordingly.
+
+### Viewing Logs from Telegram Mobile
+- Send `/logs` to immediately see the latest filtered errors recorded today.
+- Send `/logs 429` (or `/logs 404`, `/logs timeout`) to filter today's log for specific errors.
+
+### Viewing & Filtering Logs from Desktop CLI
+A standalone CLI tool `view_logs.py` is included for desktop inspection:
+
+```bash
+# View today's filtered errors (defaults to 50 lines)
+python view_logs.py
+
+# Filter by a specific error code or keyword
+python view_logs.py --keyword 429
+python view_logs.py --keyword 404
+
+# Inspect a specific date
+python view_logs.py --date 2026-09-20 --lines 100
+```
 
 ---
 

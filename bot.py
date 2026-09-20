@@ -116,8 +116,9 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"⚡ **Review Mode:** `{agent_service.review_mode}` (Only destructive operations like `rm -rf` require your tap)\n\n"
         f"**Commands:**\n"
         f"• Send any natural prompt to start building or coding\n"
-        f"• `/model` (or `/models`) - View models & switch (e.g. `/model 2.5-flash`)\n"
+        f"• `/model` (or `/models`) - View models & switch (e.g. `/model 3.6-flash`)\n"
         f"• `/retry` - Re-runs your previous prompt\n"
+        f"• `/logs` - View recent errors & diagnostics\n"
         f"• `/status` - Check current agent activity, workspace, and model\n"
         f"• `/workspace <path>` - View or switch workspace directory\n"
         f"• `/mode` - Switch between `high_risk`, `safe`, and `strict`\n"
@@ -134,9 +135,10 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🤖 **TelegramMobileAgent Guide**\n\n"
         "1. **Prompting**: Send any prompt to code, build, or manage tasks.\n"
         "2. **Commands (100% FREE - 0 Tokens Consumed)**:\n"
-        "   • `/model` or `/models` - List Gemini models & RPM limits\n"
-        "   • `/model <id>` - Switch active model (e.g. `/model 2.5-flash`)\n"
+        "   • `/model` or `/models` - List AI models & RPM limits\n"
+        "   • `/model <id>` - Switch active model (e.g. `/model 3.6-flash`)\n"
         "   • `/retry` - Re-runs your last prompt\n"
+        "   • `/logs [keyword]` - View recent error logs & diagnostics\n"
         "   • `/status` - Check agent state, active workspace, and model\n"
         "   • `/reset` (or `/cancel`) - Reset agent state if stuck\n"
         "   • `/workspace <path>` - View or switch active desktop folder\n"
@@ -444,6 +446,7 @@ BOT_COMMANDS = [
     BotCommand("model", "Switch active AI model (e.g. /model 3.6-flash)"),
     BotCommand("status", "Check workspace, active model & state"),
     BotCommand("retry", "Re-run your previous prompt"),
+    BotCommand("logs", "View recent error logs & diagnostics"),
     BotCommand("workspace", "View or switch project directory"),
     BotCommand("mode", "Change approval sensitivity"),
     BotCommand("reset", "Cancel task & clear pending approvals"),
@@ -457,6 +460,58 @@ async def register_bot_commands(application: Application):
         logger.info("Successfully registered Telegram command dropdown list.")
     except Exception as e:
         logger.warning("Could not register bot commands with Telegram: %s", e)
+
+async def cmd_logs(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """View recent diagnostic errors directly in Telegram."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+
+    import datetime
+    today = datetime.date.today().strftime("%Y-%m-%d")
+    log_file = Path(__file__).resolve().parent / "logs" / f"errors_{today}.log"
+
+    keyword = context.args[0] if context.args else None
+
+    if not log_file.exists():
+        await update.message.reply_text(
+            f"ℹ️ No error log file found for today (`{today}`).\nAll operations have been running smoothly.",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+
+    try:
+        import re
+        pat = re.compile(re.escape(keyword) if keyword else r"error|exception|traceback|404|429|503|fail|timeout", re.IGNORECASE)
+        matching_lines = []
+        with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if pat.search(line):
+                    line_clean = line.strip()
+                    if line_clean and not line_clean.startswith("="):
+                        matching_lines.append(line_clean[:130])
+
+        if not matching_lines:
+            query_desc = f"matching `{keyword}`" if keyword else "recorded"
+            await update.message.reply_text(f"✅ No {query_desc} errors found in today's log (`{today}`).", parse_mode=ParseMode.MARKDOWN)
+            return
+
+        recent = matching_lines[-10:]
+        text = f"📋 **Recent Errors & Diagnostics ({today}):**\n\n"
+        for l in recent:
+            escaped = l.replace("`", "'")
+            text += f"• `{escaped}`\n"
+        text += f"\n💡 _Run `python view_logs.py` on your desktop for complete logs & stack traces._"
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+    except Exception as e:
+        await update.message.reply_text(f"⚠️ Could not read logs: `{e}`")
+
+async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error and handle transient network / telegram exceptions gracefully without crashing."""
+    import telegram.error
+    if isinstance(context.error, (telegram.error.TimedOut, telegram.error.NetworkError)):
+        logger.warning("Telegram network glitch/timeout: %s (auto-recovering)", context.error)
+        return
+    logger.error("Exception while handling an update: %s", context.error, exc_info=context.error)
 
 def main():
     errors = config.validate_config()
@@ -499,8 +554,10 @@ def main():
     bot_app.add_handler(CommandHandler("reset", cmd_reset))
     bot_app.add_handler(CommandHandler("cancel", cmd_reset))
     bot_app.add_handler(CommandHandler("retry", cmd_retry))
+    bot_app.add_handler(CommandHandler("logs", cmd_logs))
     bot_app.add_handler(CallbackQueryHandler(handle_callback))
     bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    bot_app.add_error_handler(global_error_handler)
 
     print("Bot is polling for messages. Press Ctrl+C to stop.")
     bot_app.run_polling(bootstrap_retries=-1)

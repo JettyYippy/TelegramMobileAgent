@@ -183,9 +183,9 @@ class AgentService:
                 "model": self.model_name,
                 "retry_config": types.RetryConfig(
                     api_retry=types.ModelAPIRetryConfig(
-                        max_retries=5,
-                        initial_sleep_duration_ms=2000,
-                        exponential_multiplier=2.0,
+                        max_retries=6,
+                        initial_sleep_duration_ms=10000,
+                        exponential_multiplier=1.8,
                     )
                 ),
                 "system_instructions": (
@@ -195,6 +195,9 @@ class AgentService:
                     "- You are strictly restricted to working within the configured workspace directory. "
                     "Do NOT attempt to read, search, or execute commands in parent directories outside this workspace.\n"
                     "- All new files and scripts must be created inside your active workspace directory.\n\n"
+                    "QUOTA & PERFORMANCE OPTIMIZATION:\n"
+                    "- Combine operations and minimize unnecessary intermediate thoughts and tool calls. "
+                    "Batch file writes and edits together to conserve API requests on free tiers.\n\n"
                     "MANDATORY PROTOCOL:\n"
                     "Before executing any tool calls to write files or run commands, you MUST ALWAYS output a concise "
                     "summary of the request and your planned implementation (2-4 bullet points) under the heading:\n"
@@ -209,6 +212,7 @@ class AgentService:
                 "capabilities": CapabilitiesConfig(),
                 "hooks": [decide_tool_permission],
             }
+
 
             agent_config = LocalAgentConfig(**agent_kwargs)
 

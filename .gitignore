@@ -22,3 +22,5 @@ Thumbs.db
 # Runtime outputs & Logs
 workspace/
 *.log
+logs/*
+!logs/.gitkeep
